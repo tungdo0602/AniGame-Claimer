@@ -15,6 +15,18 @@ const rarities = {
     "UR": 5
 }
 
+function getRarity(t){
+    if(t.includes("common")){
+        if(t.includes("not")) return "UC";
+        else return "C";
+    } else if(t.includes("rare")){
+        if(t.includes("ultra")) return "UR";
+        else if(t.includes("super")) return "SR";
+        else return "R";
+    }
+    return "";
+}
+
 let CHANNEL_ID = "";
 let accard = true,
     acgift = true
@@ -24,6 +36,14 @@ let cards = 0,
     chighest = "",
     chistory = "",
     claimtimestamp = 0
+
+function updateClaim(textArr){
+    var cprefix = getRarity(textArr[0]);
+    chighest = Object.keys(rarities)[Math.max(rarities[chighest], rarities[cprefix])];
+    var cardclaim = `[${cprefix}] ${textArr[1]}`;
+    if(cprefix == "SR" || cprefix == "UR") chistory += cardclaim + "\n";
+    return cardclaim;
+}
 
 client.on("ready", async () => {
     console.clear();
@@ -43,7 +63,6 @@ client.on("messageCreate", async function(msg){
                 } else if(btn.emoji && btn.emoji.name == "🎁" && acgift){
                     msg.clickButton(btn.customId);
                     gifts += 1;
-                    console.log("Claimed gift box!");
                 }
             }
         }
@@ -54,20 +73,10 @@ client.on("messageCreate", async function(msg){
             if(title.includes(client.user.username) && title.includes("claimed")){
                 if(desc.includes("collection")){
                     var texts = desc.split("**");
-                    var cardname = texts[1];
-                    var cprefix = "";
-                    if(texts[0].includes("common")){
-                        if(texts[0].includes("not")) cprefix = "UC";
-                        else cprefix = "C";
-                    } else if(texts[0].includes("rare")){
-                        if(texts[0].includes("ultra")) cprefix = "UR";
-                        else if(texts[0].includes("super")) cprefix = "SR";
-                        else cprefix = "R";
-                    }
-                    chighest = Object.keys(rarities)[Math.max(rarities[chighest], rarities[cprefix])];
-                    var cardclaim = `[${cprefix}] ${cardname}`;
-                    if(cprefix == "SR" || cprefix == "UR") chistory += cardclaim + "\n";
-                    console.log(`Claimed ${cardclaim}!`);
+                    console.log(`Claimed ${updateClaim(texts)}!`);
+                } else if(desc.includes("rewards")){
+                    var texts = desc.split("\n")[1].slice(5).split(" ");
+                    console.log(`Claimed ${updateClaim(texts)}! [gift box]`);
                 }
             } else if(desc && desc.includes("You are not eligible to claim this card!")){
                 claimtimestamp = Number(desc.split(":")[1]);
@@ -76,7 +85,7 @@ client.on("messageCreate", async function(msg){
         }
     }
     if(msg.author.id == client.user.id){
-        if(msg.content == ".sum"){
+        if(msg.content == ".sum"){ // too lazy to use switch case
             msg.delete();
             let canClaimCard = ((new Date()).getTime()/1000) > claimtimestamp;
             msg.channel.send(`> ## Claimed
@@ -84,6 +93,7 @@ client.on("messageCreate", async function(msg){
 > - **Gifts:** \`${gifts}\`
 > -# **Highest rariry:** \`${chighest ? chighest : " "}\`
 > ## Info
+> **Current channel:** <#${CHANNEL_ID}>
 > **canClaimCard:** \`${canClaimCard}\`
 > **Claim cooldown:** ${canClaimCard ? "None" : `<t:${claimtimestamp}:F>`}
 ## History (Only SR, UR)
@@ -103,6 +113,7 @@ client.on("messageCreate", async function(msg){
         } else if(msg.content == ".ahelp"){
             msg.delete();
             msg.channel.send(`> ## Command list
+> - .sum - Show summary.
 > - .tclaim - Toggle auto claim card.
 > - .tgift - Toggle auto claim gift.
 > - .sch - Set claim channel.
