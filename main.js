@@ -30,6 +30,14 @@ let CHANNEL_ID = "",
 let accard = true,
     acgift = true
 
+let counter = {
+    "C": 0,
+    "UC": 0,
+    "R": 0,
+    "SR": 0,
+    "UR": 0
+}
+
 let cards = 0,
     gifts = 0,
     chighest = "",
@@ -38,6 +46,7 @@ let cards = 0,
 
 function updateClaim(textArr){
     var cprefix = getRarity(textArr[0]);
+    counter[cprefix] += 1;
     chighest = Object.keys(rarities)[Math.max(rarities[chighest], rarities[cprefix])];
     var cardclaim = `[${cprefix}] ${textArr[1]}`;
     if(cprefix == "SR" || cprefix == "UR") chistory += cardclaim + "\n";
@@ -60,15 +69,11 @@ client.on("messageCreate", function(msg){
                     if(btn.label == "Claim!" && ((new Date()).getTime()/1000) > claimtimestamp && accard){
                         msg.clickButton(btn.customId).catch(()=>{
                             console.log("Failed to claim card!");
-                            cards -= 1;
                         });
-                        cards += 1;
                     } else if(btn.emoji && btn.emoji.name == "🎁" && acgift){
                         msg.clickButton(btn.customId).catch(()=>{
                             console.log("Failed to claim gift!");
-                            gifts -= 1;
                         });
-                        gifts += 1;
                     }
                 }
             }
@@ -79,9 +84,11 @@ client.on("messageCreate", function(msg){
                 if(title.includes(client.user.username) && title.includes("claimed")){
                     if(desc.includes("collection")){
                         var texts = desc.split("**");
+                        cards += 1;
                         console.log(`Claimed ${updateClaim(texts)}!`);
                     } else if(desc.includes("rewards")){
                         var texts = desc.split("\n")[1].slice(5).split(" ");
+                        gifts += 1;
                         console.log(`Claimed ${updateClaim(texts)}! [gift box]`);
                     }
                 } else if(desc && desc.includes("You are not eligible to claim this card!")){
@@ -90,6 +97,7 @@ client.on("messageCreate", function(msg){
                 }
             }
         } else if(msg.channelId == DEBUG_CHANNEL_ID) console.log(msg);
+        else if(msg.channelId == "758956287937085450"){}
     }
     if(msg.author.id == client.user.id){
         if(msg.content == ".sum"){ // too lazy to use switch case
@@ -129,6 +137,13 @@ client.on("messageCreate", function(msg){
 > - .tgift - Toggle auto claim gift.
 > - .sch - Set claim channel.
 > - .ahelp - Help page.`);
+        } else if(msg.content == ".sumr"){
+            let out = "";
+            for(let k in counter){
+                out += `> - **${k}:** \`${counter[k]}\`\n`;
+            }
+            msg.delete();
+            msg.channel.send("> ## Claimed Rarities:\n" + out);
         }
     }
 });
