@@ -53,6 +53,10 @@ function updateClaim(textArr){
     return cardclaim;
 }
 
+process.on('unhandledRejection', (reason, p) => { // DiscordAPIError fix
+    console.log("Unhandled rejection:", reason);
+});
+
 const client = new bot.Client();
 
 client.on("ready", async () => {
