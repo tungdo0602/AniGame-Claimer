@@ -28,7 +28,8 @@ function getRarity(t){
 let CHANNEL_ID = "",
     DEBUG_CHANNEL_ID = "";
 let accard = true,
-    acgift = true
+    acgift = true,
+    aclotto = false
 
 let counter = {
     "C": 0,
@@ -42,7 +43,9 @@ let cards = 0,
     gifts = 0,
     chighest = "",
     chistory = "",
-    claimtimestamp = 0
+    claimtimestamp = 0,
+    gifttimestamp = 0,
+    lottotimestamp = 0
 
 function updateClaim(textArr){
     var cprefix = getRarity(textArr[0]);
@@ -53,9 +56,14 @@ function updateClaim(textArr){
     return cardclaim;
 }
 
-process.on('unhandledRejection', (reason, p) => { // DiscordAPIError fix
-    console.log("Unhandled rejection:", reason);
-});
+function updateLotto(t){
+    let num = Number(t.split("").filter(Number).join(""));
+    if(t.includes("minute"))
+        num *= 60;
+    lottotimestamp = Math.floor((new Date()).getTime()/1000) + num + 1;
+}
+
+process.on('unhandledRejection', ()=>{}); // DiscordAPIError fix
 
 const client = new bot.Client();
 
@@ -65,6 +73,11 @@ client.on("ready", async () => {
 });
 
 client.on("messageCreate", function(msg){
+    if(msg.channelId == CHANNEL_ID)
+        if(aclotto && ((new Date()).getTime()/1000) > lottotimestamp && lottotimestamp != 0)
+            msg.channel.sendSlash(BOT_ID, "lotto").catch(()=>{
+                console.log("Failed to lotto!");
+            });
     if(msg.author.id == BOT_ID){
         if(msg.channelId == CHANNEL_ID){
             if(msg.components.length > 0){
@@ -98,10 +111,22 @@ client.on("messageCreate", function(msg){
                 } else if(desc && desc.includes("You are not eligible to claim this card!")){
                     claimtimestamp = Number(desc.split(":")[1]);
                     console.log("Updated claim cooldown timestamp!");
+                } else if(title.includes("Scratch Ticket")){
+                    msg.clickButton(msg.components[0].components[0].customId).catch(()=>{
+                        console.log("Failed to click lotto button!");
+                    });
+                    updateLotto("15 minute");
                 }
             }
-        } else if(msg.channelId == DEBUG_CHANNEL_ID) console.log(msg);
-        else if(msg.channelId == "758956287937085450"){}
+            if(msg.content && msg.content.includes("This command is on cooldown... try again in")){
+                updateLotto(msg.content);
+                console.log("Updated lotto cooldown timestamp!");
+            }
+        }
+        else if(msg.channelId == "758956287937085450"){ // Global market channel
+
+        }
+        if(msg.channelId == DEBUG_CHANNEL_ID) console.log(msg);
     }
     if(msg.author.id == client.user.id){
         if(msg.content == ".sum"){ // too lazy to use switch case
@@ -114,7 +139,8 @@ client.on("messageCreate", function(msg){
 > ## Info
 > **Current channel:** ${CHANNEL_ID ? `<#${CHANNEL_ID}>` : "None"}
 > **canClaimCard:** \`${canClaimCard}\`
-> **Claim cooldown:** ${canClaimCard ? "None" : `<t:${claimtimestamp}:F>`}
+> **Claim cooldown:** ${canClaimCard ? "None" : `<t:${claimtimestamp}:R>`}
+> **Lotto cooldown:** ${lottotimestamp == 0 ? `Run lotto in <#${CHANNEL_ID ? CHANNEL_ID : 0}> first>!` : `<t:${lottotimestamp}:R>`}
 ## History (Only SR, UR)
 \`\`\`${chistory ? chistory : " "}\`\`\``)
         } else if(msg.content == ".tclaim"){
@@ -125,6 +151,10 @@ client.on("messageCreate", function(msg){
             msg.delete();
             acgift = !acgift;
             msg.channel.send(`> Auto claim gift is **${acgift ? "Enabled" : "Disabled"}**!`);
+        } else if(msg.content == ".tlotto"){
+            msg.delete();
+            aclotto = !aclotto;
+            msg.channel.send(`> Auto lotto is **${aclotto ? "Enabled" : "Disabled"}**!`);
         } else if(msg.content == ".sch"){
             msg.delete();
             CHANNEL_ID = msg.channel.id;
@@ -137,8 +167,10 @@ client.on("messageCreate", function(msg){
             msg.delete();
             msg.channel.send(`> ## Command list
 > - .sum - Show summary.
+> - .sumr - Show list of claimed card's rarity.
 > - .tclaim - Toggle auto claim card.
 > - .tgift - Toggle auto claim gift.
+> - .tlotto - Toggle auto lotto.
 > - .sch - Set claim channel.
 > - .ahelp - Help page.`);
         } else if(msg.content == ".sumr"){
