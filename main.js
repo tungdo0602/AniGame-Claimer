@@ -138,8 +138,9 @@ client.on("messageCreate", function(msg){
             msg.delete();
             let canClaimCard = ((new Date()).getTime()/1000) > claimtimestamp;
             msg.channel.send(`> ## Summary
-> - **Cards: \`${cards}\`**
+> - **Cards:** \`${cards}\`
 > - **Gifts:** \`${gifts}\`
+> - **Lottos:** \`${lottos}\`
 > -# **Highest rariry:** \`${chighest ? chighest : " "}\`
 > ## Info
 > **Current channel:** ${CHANNEL_ID ? `<#${CHANNEL_ID}>` : "None"}
