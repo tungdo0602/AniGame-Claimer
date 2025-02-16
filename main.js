@@ -41,11 +41,13 @@ let counter = {
 
 let cards = 0,
     gifts = 0,
+	lottos = 0,
     chighest = "",
     chistory = "",
     claimtimestamp = 0,
     gifttimestamp = 0,
-    lottotimestamp = 0
+    lottotimestamp = 0,
+    olottotimestamp = 0
 
 function updateClaim(textArr){
     var cprefix = getRarity(textArr[0]);
@@ -74,10 +76,12 @@ client.on("ready", async () => {
 
 client.on("messageCreate", function(msg){
     if(msg.channelId == CHANNEL_ID)
-        if(aclotto && ((new Date()).getTime()/1000) > lottotimestamp && lottotimestamp != 0)
+        if(aclotto && ((new Date()).getTime()/1000) > lottotimestamp && lottotimestamp != olottotimestamp){
+            olottotimestamp = lottotimestamp;
             msg.channel.sendSlash(BOT_ID, "lotto").catch(()=>{
                 console.log("Failed to lotto!");
             });
+        }
     if(msg.author.id == BOT_ID){
         if(msg.channelId == CHANNEL_ID){
             if(msg.components.length > 0){
@@ -116,6 +120,7 @@ client.on("messageCreate", function(msg){
                         console.log("Failed to click lotto button!");
                     });
                     updateLotto("15 minute");
+					lottos += 1;
                 }
             }
             if(msg.content && msg.content.includes("This command is on cooldown... try again in")){
@@ -132,7 +137,7 @@ client.on("messageCreate", function(msg){
         if(msg.content == ".sum"){ // too lazy to use switch case
             msg.delete();
             let canClaimCard = ((new Date()).getTime()/1000) > claimtimestamp;
-            msg.channel.send(`> ## Claimed
+            msg.channel.send(`> ## Summary
 > - **Cards: \`${cards}\`**
 > - **Gifts:** \`${gifts}\`
 > -# **Highest rariry:** \`${chighest ? chighest : " "}\`
