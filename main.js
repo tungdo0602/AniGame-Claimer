@@ -139,7 +139,7 @@ client.on("messageUpdate", function(_, msg){
         if(msg.embeds.length > 0 && msg.components.length > 0){
             let embed = msg.embeds[0];
             let title = embed.title;
-            if(title.includes("Scratch Ticket")){
+            if(title && title.includes("Scratch Ticket")){
                 statlottocount += 1;
                 if(msg.components[0].components[0].disabled){ // Check for the scratch has been clicked
                     for(let i=0;i<msg.components.length;i++){
