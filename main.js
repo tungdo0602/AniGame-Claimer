@@ -13,9 +13,12 @@ const rarities = {
     "UR": 5
 }
 
+const ScratchType = ["none", "exp", "anicard", "shard", "stamina", "gold", "raidpass", "calendarfragment","skinfragment", "diamond"]
+
 function getRarity(t){
+    t = t.toLowerCase();
     if(t.includes("common")){
-        if(t.includes("not")) return "UC";
+        if(t.includes("not") || t.includes("un")) return "UC";
         else return "C";
     } else if(t.includes("rare")){
         if(t.includes("ultra")) return "UR";
@@ -23,6 +26,19 @@ function getRarity(t){
         else return "R";
     }
     return "";
+}
+
+function getScratchData(c){
+    let data = {
+        "type": ScratchType.NO_REWARD,
+        "data": {}
+    }
+    let emoji = c.emoji.name.toLowerCase().replaceAll(/[0-9]/g, "");
+    data.type = emoji == "🗑️" ? "none" : emoji.includes("shard") ? "shard" : emoji;
+    let amount = Number(c.label);
+    data.data["amount"] = amount ? amount : 1;
+    if(emoji == "anicard") data.data["rarity"] = getRarity(c.label);
+    return data;
 }
 
 let CHANNEL_ID = "",
@@ -39,9 +55,52 @@ let counter = {
     "UR": 0
 }
 
+let lottostat = Array(4);
+for(let i=0;i<lottostat.length;i++){
+    let temp = new Array(5);
+    for(let j=0;j<temp.length;j++){
+        temp[j] = Object.fromEntries(ScratchType.map(k=>[k, 0]));
+    }
+    lottostat[i] = temp;
+}
+
+let lottoUrPos = Array(4);
+for(let i=0;i<lottoUrPos.length;i++){
+    lottoUrPos[i] = Array(5).fill(0);
+}
+
+function findMaxLottoStat(key){
+    let m = 0;
+    let pos = [0,0];
+    for(let i=0;i<lottostat.length;i++){
+        for(let j=0;j<lottostat[0].length;j++){
+            if(lottostat[i][j][key] > m){
+                m = lottostat[i][j][key];
+                pos = [i,j];
+            }
+        }
+    }
+    return pos;
+}
+
+function findMaxUrPos(){ // Lmao duplicate
+    let m = 0;
+    let pos = [0,0];
+    for(let i=0;i<lottoUrPos.length;i++){
+        for(let j=0;j<lottoUrPos[0].length;j++){
+            if(lottoUrPos[i][j] > m){
+                m = lottoUrPos[i][j];
+                pos = [i,j];
+            }
+        }
+    }
+    return pos;
+}
+
 let cards = 0,
     gifts = 0,
 	lottos = 0,
+    statlottocount = 0,
     chighest = "",
     chistory = "",
     claimtimestamp = 0,
@@ -72,6 +131,28 @@ const client = new bot.Client();
 client.on("ready", async () => {
     console.clear();
     console.log(`${client.user.username} is ready!`);
+});
+
+client.on("messageUpdate", function(_, msg){
+    // Collect global data
+    if(msg.author.id == BOT_ID){
+        if(msg.embeds.length > 0 && msg.components.length > 0){
+            let embed = msg.embeds[0];
+            let title = embed.title;
+            if(title.includes("Scratch Ticket")){
+                statlottocount += 1;
+                if(msg.components[0].components[0].disabled){ // Check for the scratch has been clicked
+                    for(let i=0;i<msg.components.length;i++){
+                        for(let j=0;j<msg.components[0].components.length;j++){
+                            let data = getScratchData(msg.components[i].components[j]);
+                            if(data.type == "anicard" && data.data.rarity == "UR") lottoUrPos[i][j] += 1;
+                            if(data) lottostat[i][j][data.type] += 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
 });
 
 client.on("messageCreate", function(msg){
@@ -116,7 +197,7 @@ client.on("messageCreate", function(msg){
                     claimtimestamp = Number(desc.split(":")[1]);
                     console.log("Updated claim cooldown timestamp!");
                 } else if(title.includes("Scratch Ticket")){
-                    msg.clickButton(msg.components[0].components[0].customId).catch(()=>{
+                    msg.clickButton(msg.components[Math.floor(Math.random()*4)].components[Math.floor(Math.random()*5)].customId).catch(()=>{
                         console.log("Failed to click lotto button!");
                     });
                     updateLotto("15 minute");
@@ -178,6 +259,7 @@ client.on("messageCreate", function(msg){
 > - .tgift - Toggle auto claim gift.
 > - .tlotto - Toggle auto lotto.
 > - .sch - Set claim channel.
+> - .lottostat - Get statistics of lottery.
 > - .ahelp - Help page.`);
         } else if(msg.content == ".sumr"){
             let out = "";
@@ -186,6 +268,13 @@ client.on("messageCreate", function(msg){
             }
             msg.delete();
             msg.channel.send("> ## Claimed Rarities:\n" + out);
+        } else if(msg.content == ".lottostat"){
+            let out = "";
+            for(let i=0;i<ScratchType.length;i++){
+                out += `> - **${ScratchType[i]}:** \`(${findMaxLottoStat(ScratchType[i]).join(", ")})\`\n`;
+            }
+            msg.delete();
+            msg.channel.send(`> ## Max entries pos (col, row):\n> ### Total lottos: \`${statlottocount}\`\n` + out + `> - **UR Card:** \`(${findMaxUrPos().join(", ")})\``);
         }
     }
 });
