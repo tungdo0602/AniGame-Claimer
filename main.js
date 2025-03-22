@@ -1,5 +1,6 @@
 const bot = require("discord.js-selfbot-v13");
 const prompt = require("readline-sync").question;
+const fs = require('fs');
 
 const TOKEN = prompt("Token: ");
 const BOT_ID = "571027211407196161";
@@ -13,7 +14,7 @@ const rarities = {
     "UR": 5
 }
 
-const ScratchType = ["none", "exp", "anicard", "shard", "stamina", "gold", "raidpass", "calendarfragment","skinfragment", "diamond"]
+const ScratchType = ["none", "exp", "anicard", "shard", "stamina", "gold", "raidpass", "calendarfragment","skinfragment", "diamond", "urcard"]
 
 function getRarity(t){
     t = t.toLowerCase();
@@ -43,9 +44,21 @@ function getScratchData(c){
 
 let CHANNEL_ID = "",
     DEBUG_CHANNEL_ID = "";
+
 let accard = true,
     acgift = true,
     aclotto = false
+
+let cards = 0,
+    gifts = 0,
+	lottos = 0,
+    statlottocount = 0,
+    chighest = "",
+    chistory = "",
+    claimtimestamp = 0,
+    gifttimestamp = 0,
+    lottotimestamp = 0,
+    olottotimestamp = 0
 
 let counter = {
     "C": 0,
@@ -64,16 +77,30 @@ for(let i=0;i<lottostat.length;i++){
     lottostat[i] = temp;
 }
 
-let lottoUrPos = Array(4);
-for(let i=0;i<lottoUrPos.length;i++){
-    lottoUrPos[i] = Array(5).fill(0);
+function readFileSafe(filePath, failedContent = ""){
+    let out = "";
+    try {
+        out = fs.readFileSync(filePath, "utf-8");
+    } catch {
+        console.log("File not found!");
+        fs.writeFileSync(filePath, failedContent, "utf-8");
+    }
+    return out;
 }
+
+let temp = readFileSafe("lotto.json", JSON.stringify({"count": statlottocount, "stat": lottostat}));
+if(temp){
+    temp = JSON.parse(temp);
+    lottostat = temp["stat"];
+    statlottocount = temp["count"];
+}
+temp = null; // Free up memory
 
 function findMaxLottoStat(key){
     let m = 0;
     let pos = [0,0];
-    for(let i=0;i<lottostat.length;i++){
-        for(let j=0;j<lottostat[0].length;j++){
+    for(let i=0;i<4;i++){
+        for(let j=0;j<5;j++){
             if(lottostat[i][j][key] > m){
                 m = lottostat[i][j][key];
                 pos = [i,j];
@@ -82,31 +109,6 @@ function findMaxLottoStat(key){
     }
     return pos;
 }
-
-function findMaxUrPos(){ // Lmao duplicate
-    let m = 0;
-    let pos = [0,0];
-    for(let i=0;i<lottoUrPos.length;i++){
-        for(let j=0;j<lottoUrPos[0].length;j++){
-            if(lottoUrPos[i][j] > m){
-                m = lottoUrPos[i][j];
-                pos = [i,j];
-            }
-        }
-    }
-    return pos;
-}
-
-let cards = 0,
-    gifts = 0,
-	lottos = 0,
-    statlottocount = 0,
-    chighest = "",
-    chistory = "",
-    claimtimestamp = 0,
-    gifttimestamp = 0,
-    lottotimestamp = 0,
-    olottotimestamp = 0
 
 function updateClaim(textArr){
     var cprefix = getRarity(textArr[0]);
@@ -131,6 +133,12 @@ const client = new bot.Client();
 client.on("ready", async () => {
     console.clear();
     console.log(`${client.user.username} is ready!`);
+    setInterval(()=>{
+        fs.writeFile("lotto.json", JSON.stringify({
+            "count": statlottocount,
+            "stat": lottostat
+        }), (err)=>console.log(err ? "Failed to save statistics!" : "Saved statistics!"));
+    }, 60000); // 5 Minutes
 });
 
 client.on("messageUpdate", function(_, msg){
@@ -145,7 +153,7 @@ client.on("messageUpdate", function(_, msg){
                     for(let i=0;i<msg.components.length;i++){
                         for(let j=0;j<msg.components[0].components.length;j++){
                             let data = getScratchData(msg.components[i].components[j]);
-                            if(data.type == "anicard" && data.data.rarity == "UR") lottoUrPos[i][j] += 1;
+                            if(data.type == "anicard" && data.data.rarity == "UR") lottostat[i][j]["urcard"] += 1;
                             if(data) lottostat[i][j][data.type] += 1;
                         }
                     }
@@ -214,7 +222,7 @@ client.on("messageCreate", function(msg){
         }
         if(msg.channelId == DEBUG_CHANNEL_ID) console.log(msg);
     }
-    if(msg.author.id == client.user.id){
+    if(msg.author.id == client.user.id && msg.guildId != "682900984757878794"){ // Anigame official server block
         if(msg.content == ".sum"){ // too lazy to use switch case
             msg.delete();
             let canClaimCard = ((new Date()).getTime()/1000) > claimtimestamp;
@@ -274,7 +282,7 @@ client.on("messageCreate", function(msg){
                 out += `> - **${ScratchType[i]}:** \`(${findMaxLottoStat(ScratchType[i]).join(", ")})\`\n`;
             }
             msg.delete();
-            msg.channel.send(`> ## Max entries pos (col, row):\n> ### Total lottos: \`${statlottocount}\`\n` + out + `> - **UR Card:** \`(${findMaxUrPos().join(", ")})\``);
+            msg.channel.send(`> ## Max entries pos (col, row):\n> ### Total lottos: \`${statlottocount}\`\n` + out);
         }
     }
 });
