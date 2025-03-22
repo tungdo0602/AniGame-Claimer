@@ -52,4 +52,4 @@ while True:
         else:
             print(f"[{count}] Failed! [{status}]")
         if count > 3: count = 0
-        time.sleep(0.25)
+        time.sleep(1)
