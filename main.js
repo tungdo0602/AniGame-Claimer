@@ -4,6 +4,7 @@ const fs = require('fs');
 
 const TOKEN = prompt("Token: ");
 const BOT_ID = "571027211407196161";
+let CHANNEL_ID = "";
 
 const rarities = {
     "": 0,
@@ -14,7 +15,7 @@ const rarities = {
     "UR": 5
 }
 
-const ScratchType = ["none", "exp", "anicard", "shard", "stamina", "gold", "raidpass", "calendarfragment","skinfragment", "diamond", "urcard"]
+const ScratchType = ["none", "exp", "anicard", "shard", "stamina", "gold", "raidpass", "calendarfragment","skinfragment", "diamond", "goldenegg", "urcard"]
 
 function getRarity(t){
     t = t.toLowerCase();
@@ -31,7 +32,7 @@ function getRarity(t){
 
 function getScratchData(c){
     let data = {
-        "type": ScratchType.NO_REWARD,
+        "type": "none",
         "data": {}
     }
     let emoji = c.emoji.name.toLowerCase().replaceAll(/[0-9]/g, "");
@@ -42,8 +43,7 @@ function getScratchData(c){
     return data;
 }
 
-let CHANNEL_ID = "",
-    DEBUG_CHANNEL_ID = "";
+let DEBUG_CHANNEL_ID = "";
 
 let accard = true,
     acgift = true,
@@ -97,16 +97,20 @@ if(temp){
 temp = null; // Free up memory
 
 function findMaxLottoStat(key){
-    let m = 0;
-    let pos = [0,0];
+    let m = -1;
+    let pos = [];
     for(let i=0;i<4;i++){
         for(let j=0;j<5;j++){
-            if(lottostat[i][j][key] > m){
-                m = lottostat[i][j][key];
-                pos = [i,j];
-            }
+            m = Math.max(m, lottostat[i][j][key]);
         }
     }
+    for(let i=0;i<4;i++){
+        for(let j=0;j<5;j++){
+            if(lottostat[i][j][key] == m)
+                pos.push([i,j]);
+        }
+    }
+    if(pos.length == 0) return [[0, 0]];
     return pos;
 }
 
@@ -276,10 +280,10 @@ client.on("messageCreate", function(msg){
             }
             msg.delete();
             msg.channel.send("> ## Claimed Rarities:\n" + out);
-        } else if(msg.content == ".lottostat"){
+        } else if(msg.content == ".lstat"){
             let out = "";
             for(let i=0;i<ScratchType.length;i++){
-                out += `> - **${ScratchType[i]}:** \`(${findMaxLottoStat(ScratchType[i]).join(", ")})\`\n`;
+                out += `> - **${ScratchType[i]}:** ${findMaxLottoStat(ScratchType[i]).map(e=>"\`("+e.join(", ")+")\`").join(" | ")}\n`;
             }
             msg.delete();
             msg.channel.send(`> ## Max entries pos (col, row):\n> ### Total lottos: \`${statlottocount}\`\n` + out);
