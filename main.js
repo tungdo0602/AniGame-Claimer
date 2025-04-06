@@ -127,7 +127,7 @@ function updateLotto(t){
     let num = Number(t.split("").filter(Number).join(""));
     if(t.includes("minute"))
         num *= 60;
-    lottotimestamp = Math.floor((new Date()).getTime()/1000) + num + 1;
+    lottotimestamp = (new Date()).getTime() + num*1000 + 1000;
 }
 
 process.on('unhandledRejection', ()=>{}); // DiscordAPIError fix
@@ -169,7 +169,7 @@ client.on("messageUpdate", function(_, msg){
 
 client.on("messageCreate", function(msg){
     if(msg.channelId == CHANNEL_ID)
-        if(aclotto && ((new Date()).getTime()/1000) > lottotimestamp && lottotimestamp != olottotimestamp){
+        if(aclotto && (new Date()).getTime() > lottotimestamp && lottotimestamp != olottotimestamp){
             olottotimestamp = lottotimestamp;
             msg.channel.sendSlash(BOT_ID, "lotto").catch(()=>{
                 console.log("Failed to lotto!");
@@ -180,11 +180,11 @@ client.on("messageCreate", function(msg){
             if(msg.components.length > 0){
                 var btn = msg.components[0].components[0];
                 if(btn.type == "BUTTON"){
-                    if(btn.label == "Claim!" && ((new Date()).getTime()/1000) > claimtimestamp && accard){
+                    if(btn.label == "Claim!" && (new Date()).getTime() > claimtimestamp && accard){
                         msg.clickButton(btn.customId).catch(()=>{
                             console.log("Failed to claim card!");
                         });
-                    } else if(btn.emoji && btn.emoji.name == "🎁" && acgift){
+                    } else if(btn.emoji && btn.emoji.name == "🎁" && (new Date()).getTime() > gifttimestamp && acgift){
                         msg.clickButton(btn.customId).catch(()=>{
                             console.log("Failed to claim gift!");
                         });
@@ -206,7 +206,7 @@ client.on("messageCreate", function(msg){
                         console.log(`Claimed ${updateClaim(texts)}! [gift box]`);
                     }
                 } else if(desc && desc.includes("You are not eligible to claim this card!")){
-                    claimtimestamp = Number(desc.split(":")[1]);
+                    claimtimestamp = Number(desc.split(":")[1])*1000;
                     console.log("Updated claim cooldown timestamp!");
                 } else if(title.includes("Scratch Ticket")){
                     msg.clickButton(msg.components[Math.floor(Math.random()*4)].components[Math.floor(Math.random()*5)].customId).catch(()=>{
@@ -216,9 +216,16 @@ client.on("messageCreate", function(msg){
 					lottos += 1;
                 }
             }
-            if(msg.content && msg.content.includes("This command is on cooldown... try again in")){
-                updateLotto(msg.content);
-                console.log("Updated lotto cooldown timestamp!");
+            if(msg.content){
+                if(msg.content.includes("This command is on cooldown... try again in")){
+                    updateLotto(msg.content);
+                    console.log("Updated lotto cooldown timestamp!");
+                } else if(msg.content.includes("You have claimed 5")){
+                    var h = parseInt((t.match(/(\d+)h/) || [0, 0])[1])*3600;
+                    var m = parseInt((t.match(/(\d+)m/) || [0, 0])[1])*60;
+                    var s = parseInt((t.match(/(\d+)s/) || [0, 0])[1]); // Not sure if it has seconds.
+                    gifttimestamp = (new Date()).getTime() + (h+m+s)*1000;
+                }
             }
         }
         else if(msg.channelId == "758956287937085450"){ // Global market channel
@@ -229,7 +236,7 @@ client.on("messageCreate", function(msg){
     if(msg.author.id == client.user.id && msg.guildId != "682900984757878794"){ // Anigame official server block
         if(msg.content == ".sum"){ // too lazy to use switch case
             msg.delete();
-            let canClaimCard = ((new Date()).getTime()/1000) > claimtimestamp;
+            let canClaimCard = (new Date()).getTime() > claimtimestamp;
             msg.channel.send(`> ## Summary
 > - **Cards:** \`${cards}\`
 > - **Gifts:** \`${gifts}\`
@@ -271,7 +278,7 @@ client.on("messageCreate", function(msg){
 > - .tgift - Toggle auto claim gift.
 > - .tlotto - Toggle auto lotto.
 > - .sch - Set claim channel.
-> - .lottostat - Get statistics of lottery.
+> - .lstat - Get statistics of lottery.
 > - .ahelp - Help page.`);
         } else if(msg.content == ".sumr"){
             let out = "";
