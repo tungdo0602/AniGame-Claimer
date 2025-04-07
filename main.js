@@ -221,9 +221,9 @@ client.on("messageCreate", function(msg){
                     updateLotto(msg.content);
                     console.log("Updated lotto cooldown timestamp!");
                 } else if(msg.content.includes("You have claimed 5")){
-                    var h = parseInt((t.match(/(\d+)h/) || [0, 0])[1])*3600;
-                    var m = parseInt((t.match(/(\d+)m/) || [0, 0])[1])*60;
-                    var s = parseInt((t.match(/(\d+)s/) || [0, 0])[1]); // Not sure if it has seconds.
+                    var h = parseInt((msg.content.match(/(\d+)h/) || [0, 0])[1])*3600;
+                    var m = parseInt((msg.content.match(/(\d+)m/) || [0, 0])[1])*60;
+                    var s = parseInt((msg.content.match(/(\d+)s/) || [0, 0])[1]); // Not sure if it has seconds.
                     gifttimestamp = (new Date()).getTime() + (h+m+s)*1000;
                 }
             }
