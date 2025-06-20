@@ -1,10 +1,22 @@
 const bot = require("discord.js-selfbot-v13");
-const prompt = require("readline-sync").question;
 const fs = require('fs');
 
-const TOKEN = prompt("Token: ");
-const BOT_ID = "571027211407196161";
+let TOKEN = "";
 let CHANNEL_ID = "";
+let argv = process.argv
+if(argv.length < 3){
+    const prompt = require("readline-sync").question;
+    TOKEN = prompt("Token: ");
+} else {
+    if(argv[2].toLowerCase() == "--help"){
+        console.log(`Usage: node ${require('path').basename(__filename)} [TOKEN] [CHANNEL_ID]`);
+        process.exit();
+    }
+    TOKEN = argv[2];
+    if(argv.length == 4)
+        CHANNEL_ID = argv[3];
+}
+const BOT_ID = "571027211407196161";
 
 const rarities = {
     "": 0,
@@ -237,6 +249,7 @@ client.on("messageCreate", function(msg){
         if(msg.content == ".sum"){ // too lazy to use switch case
             msg.delete();
             let canClaimCard = (new Date()).getTime() > claimtimestamp;
+            let canClaimGift = (new Date()).getTime() > gifttimestamp;
             msg.channel.send(`> ## Summary
 > - **Cards:** \`${cards}\`
 > - **Gifts:** \`${gifts}\`
@@ -245,8 +258,9 @@ client.on("messageCreate", function(msg){
 > ## Info
 > **Current channel:** ${CHANNEL_ID ? `<#${CHANNEL_ID}>` : "None"}
 > **canClaimCard:** \`${canClaimCard}\`
-> **Claim cooldown:** ${canClaimCard ? "None" : `<t:${claimtimestamp}:R>`}
-> **Lotto cooldown:** ${lottotimestamp == 0 ? `Run lotto in <#${CHANNEL_ID ? CHANNEL_ID : 0}> first>!` : `<t:${lottotimestamp}:R>`}
+> **Claim cooldown:** ${canClaimCard ? "None" : `<t:${Math.floor(claimtimestamp/1000)}:R>`}
+> **Gift cooldown:** ${canClaimGift ? "None" : `<t:${Math.floor(gifttimestamp/1000)}:R>`}
+> **Lotto cooldown:** ${lottotimestamp == 0 ? `Run lotto in <#${CHANNEL_ID ? CHANNEL_ID : 0}> first>!` : `<t:${lottotimestamp/1000}:R>`}
 ## History (Only SR, UR)
 \`\`\`${chistory ? chistory : " "}\`\`\``)
         } else if(msg.content == ".tclaim"){
