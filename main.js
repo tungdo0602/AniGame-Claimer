@@ -245,7 +245,7 @@ client.on("messageCreate", function(msg){
         }
         if(msg.channelId == DEBUG_CHANNEL_ID) console.log(msg);
     }
-    if(msg.author.id == client.user.id && msg.guildId != "682900984757878794"){ // Anigame official server block
+    if(msg.author.id == client.user.id && ["1385609118487805992", "682900984757878794"].every(exclude_guild_id=>msg.guildId != exclude_guild_id)){ // Exclude server block
         if(msg.content == ".sum"){ // too lazy to use switch case
             msg.delete();
             let canClaimCard = (new Date()).getTime() > claimtimestamp;
