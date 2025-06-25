@@ -1,7 +1,7 @@
 const bot = require("discord.js-selfbot-v13");
 const fs = require('fs');
 
-let TOKEN = "ODE4ODU2MjY2NzIxMTMyNTY0.GiOzB6.mpldgBO0LTs8Hn_AWi6GPkLoDumQDGPeGWP8Xg";
+let TOKEN = "";
 let data = {}
 let CHANNEL_ID = "913451615573385269";
 
