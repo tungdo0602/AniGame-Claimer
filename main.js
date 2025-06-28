@@ -14,9 +14,9 @@ if(argv.length < 3){
         process.exit();
     }
     TOKEN = argv[2];
-    if(argv.length == 4)
+    if(argv[3])
         CHANNEL_ID = argv[3];
-    if(argv.length == 5)
+    if(argv[4])
         NOTIF_CHANNEL_ID = argv[4];
 }
 const BOT_ID = "571027211407196161";
@@ -249,7 +249,8 @@ client.on("messageCreate", function(msg){
             let price = Number(embed.title.split(" ")[0].slice(2).replace(",", ""));
             let rarity = embed.description.split("\n")[1].split(" | ")[0];
             if(price <= max_price_to_forward && rarity == "Ultra Rare"){
-                msg.forward(client.channels.find(c=>c.id == NOTIF_CHANNEL_ID));
+                let forward_channel = client.channels.find(c=>c.id == NOTIF_CHANNEL_ID);
+                if(forward_channel) msg.forward();
             }
             
         }
