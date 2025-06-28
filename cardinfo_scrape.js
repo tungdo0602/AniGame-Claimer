@@ -3,15 +3,20 @@ const fs = require('fs');
 
 let TOKEN = "";
 let data = {}
-let CHANNEL_ID = "913451615573385269";
+let CHANNEL_ID = "";
 
 try {
-    fs.readFileSync("./cardData.json", "utf-8");
+    data = JSON.parse(fs.readFileSync("./cardData.json", "utf-8"));
 } catch {
     console.log("File not found!");
 }
 
+let done = true;
 function updateData(msg, log = false){
+    if(msg.components.length != 2) return;
+    if(msg.components[0].type != "CONTAINER") return;
+    if(msg.components[0].components.length != 5) return;
+    if(!(msg.components[0].components[4].content && msg.components[0].components[4].content.includes("Page"))) return;
     let cn = msg.components[0].components;
     let info = cn[0].components[0].content.split("\n\n");
     let name = info[0].match(/\*\*(.*?)\*\*/)[1];
@@ -42,7 +47,6 @@ function updateData(msg, log = false){
         "stats": stats,
         "talent": talent
     }
-    fs.writeFileSync("./cardData.json", JSON.stringify(data), "utf-8");
     if(log) console.log(data[id]);
 }
 
@@ -54,13 +58,19 @@ client.on("ready", async () => {
     console.log(`${client.user.username} is ready!`);
 });
 
-client.on("messageUpdate", async function(_msg, msg){
-    if(!(msg.channelId == CHANNEL_ID && msg.author.id == "571027211407196161")) return;
-    let btn = msg.components[1].components[2];
-    updateData(_msg);
+setInterval(()=>{
+    fs.writeFileSync("./cardData.json", JSON.stringify(data), "utf-8");
+    console.log("Saved!");
+}, 10000);
+
+client.on("messageCreate", function(msg){
+    if(msg.author.id != "571027211407196161") return;
     updateData(msg, true);
-    if(!interval)
-        interval = setInterval(()=>msg.clickButton(btn.customId), 1000);
+})
+
+client.on("messageUpdate", function(_msg, msg){
+    if(msg.author.id != "571027211407196161") return;
+    updateData(msg, true);
 });
 
 client.login(TOKEN);
