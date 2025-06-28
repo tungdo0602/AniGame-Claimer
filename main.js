@@ -1,20 +1,23 @@
 const bot = require("discord.js-selfbot-v13");
 const fs = require('fs');
 
-let TOKEN = "";
-let CHANNEL_ID = "";
+let TOKEN = "ODE4ODU2MjY2NzIxMTMyNTY0.Gpa4_-.VZLXidQMESOW6Op2OcZXs3yf2ljeWRNrIrtPdo";
+let CHANNEL_ID = "906084344991457282";
+let NOTIF_CHANNEL_ID = "906084344991457282";
 let argv = process.argv
 if(argv.length < 3){
-    const prompt = require("readline-sync").question;
-    TOKEN = prompt("Token: ");
+    //const prompt = require("readline-sync").question;
+    //TOKEN = prompt("Token: ");
 } else {
     if(argv[2].toLowerCase() == "--help"){
-        console.log(`Usage: node ${require('path').basename(__filename)} [TOKEN] [CHANNEL_ID]`);
+        console.log(`Usage: node ${require('path').basename(__filename)} [TOKEN] [CLAM_CHANNEL_ID] [NOTIFICATION_CHANNEL_ID]`);
         process.exit();
     }
     TOKEN = argv[2];
     if(argv.length == 4)
         CHANNEL_ID = argv[3];
+    if(argv.length == 5)
+        NOTIF_CHANNEL_ID = argv[4];
 }
 const BOT_ID = "571027211407196161";
 
@@ -70,7 +73,8 @@ let cards = 0,
     claimtimestamp = 0,
     gifttimestamp = 0,
     lottotimestamp = 0,
-    olottotimestamp = 0
+    olottotimestamp = 0,
+    max_price_to_forward = 10000
 
 let counter = {
     "C": 0,
@@ -241,7 +245,13 @@ client.on("messageCreate", function(msg){
             }
         }
         else if(msg.channelId == "758956287937085450"){ // Global market channel
-
+            let embed = msg.embeds[0];
+            let price = Number(embed.title.split(" ")[0].slice(2).replace(",", ""));
+            let rarity = embed.description.split("\n")[1].split(" | ")[0];
+            if(price <= max_price_to_forward && rarity == "Ultra Rare"){
+                msg.forward(client.channels.find(c=>c.id == NOTIF_CHANNEL_ID));
+            }
+            
         }
         if(msg.channelId == DEBUG_CHANNEL_ID) console.log(msg);
     }
@@ -293,6 +303,9 @@ client.on("messageCreate", function(msg){
 > - .tlotto - Toggle auto lotto.
 > - .sch - Set claim channel.
 > - .lstat - Get statistics of lottery.
+> - .dsch - Set debug channel.
+> - .nsch - Set notification channel (for market snipe).
+> - .stgold - Set max gold value for bot to trigger forward market.
 > - .ahelp - Help page.`);
         } else if(msg.content == ".sumr"){
             let out = "";
@@ -308,6 +321,18 @@ client.on("messageCreate", function(msg){
             }
             msg.delete();
             msg.channel.send(`> ## Max entries pos (col, row):\n> ### Total lottos: \`${statlottocount}\`\n` + out);
+        } else if(msg.content == ".stgold"){
+            msg.delete();
+            let price = msg.content.split(" ")[1];
+            if(!price) msg.channel.send("USAGE: .stgold [max_price]");
+            else {
+                max_price_to_forward = Number(price);
+                msg.channel.send(`Set price to \`${max_price_to_forward}\``);
+            }
+        } else if(msg.content == ".nsch"){
+            msg.delete();
+            NOTIF_CHANNEL_ID = msg.channel.id;
+            msg.channel.send(`Set Notification Channel to <#${NOTIF_CHANNEL_ID}>`);
         }
     }
 });
