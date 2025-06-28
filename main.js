@@ -1,13 +1,13 @@
 const bot = require("discord.js-selfbot-v13");
 const fs = require('fs');
 
-let TOKEN = "ODE4ODU2MjY2NzIxMTMyNTY0.Gpa4_-.VZLXidQMESOW6Op2OcZXs3yf2ljeWRNrIrtPdo";
-let CHANNEL_ID = "906084344991457282";
-let NOTIF_CHANNEL_ID = "906084344991457282";
+let TOKEN = "";
+let CHANNEL_ID = "";
+let NOTIF_CHANNEL_ID = "";
 let argv = process.argv
 if(argv.length < 3){
-    //const prompt = require("readline-sync").question;
-    //TOKEN = prompt("Token: ");
+    const prompt = require("readline-sync").question;
+    TOKEN = prompt("Token: ");
 } else {
     if(argv[2].toLowerCase() == "--help"){
         console.log(`Usage: node ${require('path').basename(__filename)} [TOKEN] [CLAM_CHANNEL_ID] [NOTIFICATION_CHANNEL_ID]`);
