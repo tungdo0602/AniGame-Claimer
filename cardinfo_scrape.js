@@ -1,9 +1,9 @@
 const bot = require("discord.js-selfbot-v13");
 const fs = require('fs');
 
-let TOKEN = "";
+let TOKEN = "ODE4ODU2MjY2NzIxMTMyNTY0.GiOzB6.mpldgBO0LTs8Hn_AWi6GPkLoDumQDGPeGWP8Xg";
 let data = {}
-let CHANNEL_ID = "";
+let CHANNEL_ID = "913451615573385269";
 
 try {
     data = JSON.parse(fs.readFileSync("./cardData.json", "utf-8"));
